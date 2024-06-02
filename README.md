@@ -17,3 +17,7 @@ With [lazy.nvim](https://github.com/folke/lazy.nvim)
 ```
 
 ## ⚙️  Configuration
+
+## 🚀 Usage
+
+Currently, the plugin only provides one hotkey: `<leader>qs`.
