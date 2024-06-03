@@ -1,22 +1,9 @@
 local M = {}
 
-local patterns = {
-    hex = '#%x%x%x%x%x%x',
-    short_hex = '#%x%x%x',
-    rgb = 'rgb(%d+,%d+,%d+)',
-    ip = '%d+%.%d+%.%d+%.%d+',
-    email = '%w+@%w+%.%w+',
-    url = 'https?://[%w-_%.%?%.:/%+=&]+',
-    number = '%d%d%d%d+',
-    path = '~/[%w-_%.%?%.:/%+=&]+',
-}
-
-local possible_labels = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-
-local function get_matches(lines)
+local function get_matches(lines, patterns)
     local matches = {}
 
-    for _, pattern in pairs(patterns) do
+    for _, pattern in ipairs(patterns) do
         for i, line in pairs(lines) do
             local start = 1
             while start <= string.len(line) do
@@ -57,33 +44,88 @@ local function register_keymap(namespace_id, match, label, labels, marks)
     end)
 end
 
-function M.setup(opts)
-    vim.keymap.set('n', '<leader>qs', function()
-        local lines = vim.api.nvim_buf_get_lines(0, 0, vim.api.nvim_buf_line_count(0), false)
-        local matches = get_matches(lines)
-        local namespace_id = vim.api.nvim_create_namespace('quickselect')
-        local marks = {}
-        local labels = {}
-        for _, match in pairs(matches) do
-            local label = string.sub(possible_labels, #marks + 1, #marks + 1)
-            local mark_id = vim.api.nvim_buf_set_extmark(0, namespace_id, match.row, match.column, {
-                virt_text = {
-                    { label }
-                },
-                virt_text_pos = 'overlay',
-            })
-            table.insert(marks, mark_id)
-            table.insert(labels, label)
-            register_keymap(namespace_id, match, label, labels, marks)
-        end
+M.default_config = {
+    patterns = {
+        -- Hex color
+        '#%x%x%x%x%x%x',
+        -- Short-Hex color
+        '#%x%x%x',
+        -- RGB color
+        'rgb(%d+,%d+,%d+)',
+        -- IP Address
+        '%d+%.%d+%.%d+%.%d+',
+        -- Email
+        '%w+@%w+%.%w+',
+        -- URL
+        'https?://[%w-_%.%?%.:/%+=&]+',
+        -- 4+ digit number
+        '%d%d%d%d+',
+        -- File path
+        '~/[%w-_%.%?%.:/%+=&]+',
+    },
+    use_default_patterns = true,
+    labels = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
+    keymap = {
+    },
+}
 
-        vim.keymap.set('n', '<esc>', function()
-            clear(namespace_id, marks, labels)
-        end)
-    end)
+function M.setup(opts)
+    opts = opts or {}
+    if opts.use_default_patterns == nil then
+        opts.use_default_patterns = M.default_config.use_default_patterns
+    end
+    if opts.use_default_patterns then
+        if opts.patterns == nil then
+            opts.patterns = M.default_config.patterns
+        else
+            vim.tbl_extend('force', opts.patterns, M.default_config.patterns)
+        end
+    end
+    if opts.labels == nil then
+        opts.labels = M.default_config.labels
+    end
+
+    if opts.keymap == nil then
+        return
+    end
+
+    M.config = opts
+
+    for _, keymap in ipairs(opts.keymap) do
+        for _, mode in ipairs(keymap.mode) do
+            if mode ~= 'n' and mode ~= 'v' and mode ~= 'i' and mode ~= 'x' then
+                error('Invalid mode: ' .. mode)
+            end
+            if keymap[1] == nil or keymap[2] == nil then
+                error('Invalid keymap: ' .. keymap)
+            end
+            vim.keymap.set(mode, keymap[1], keymap[2], { desc = keymap.desc })
+        end
+    end
 end
 
 function M.quick_select()
+    local lines = vim.api.nvim_buf_get_lines(0, 0, vim.api.nvim_buf_line_count(0), false)
+    local matches = get_matches(lines, M.config.patterns)
+    local namespace_id = vim.api.nvim_create_namespace('quickselect')
+    local marks = {}
+    local labels = {}
+    for _, match in pairs(matches) do
+        local label = string.sub(M.config.labels, #marks + 1, #marks + 1)
+        local mark_id = vim.api.nvim_buf_set_extmark(0, namespace_id, match.row, match.column, {
+            virt_text = {
+                { label }
+            },
+            virt_text_pos = 'overlay',
+        })
+        table.insert(marks, mark_id)
+        table.insert(labels, label)
+        register_keymap(namespace_id, match, label, labels, marks)
+    end
+
+    vim.keymap.set('n', '<esc>', function()
+        clear(namespace_id, marks, labels)
+    end)
 end
 
 return M
