@@ -56,6 +56,7 @@ With [lazy.nvim](https://github.com/folke/lazy.nvim)
         -- File path
         "~/[%w-_%.%?%.:/%+=&]+",
     },
+    select_match = true,
     use_default_patterns = true,
     labels = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789",
     keymap = {
