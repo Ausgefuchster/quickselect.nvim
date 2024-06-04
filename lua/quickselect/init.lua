@@ -40,6 +40,11 @@ end
 local function register_keymap(namespace_id, match, label, labels, marks)
     vim.keymap.set('n', label, function()
         vim.api.nvim_win_set_cursor(0, { match.row + 1, match.column })
+
+        if M.config.select_match == true then
+            vim.cmd('normal! v')
+            vim.api.nvim_win_set_cursor(0, { match.row + 1, match.column + string.len(match.text) - 1})
+        end
         clear(namespace_id, marks, labels)
     end)
 end
@@ -63,6 +68,7 @@ M.default_config = {
         -- File path
         '~/[%w-_%.%?%.:/%+=&]+',
     },
+    select_match = true,
     use_default_patterns = true,
     labels = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
     keymap = {
@@ -83,6 +89,9 @@ function M.setup(opts)
     end
     if opts.labels == nil then
         opts.labels = M.default_config.labels
+    end
+    if opts.select_match == nil then
+        opts.select_match = M.default_config.select_match
     end
 
     M.config = opts
