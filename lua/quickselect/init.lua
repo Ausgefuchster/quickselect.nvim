@@ -74,22 +74,22 @@ function M.setup(opts)
     if opts.use_default_patterns == nil then
         opts.use_default_patterns = M.default_config.use_default_patterns
     end
-    if opts.use_default_patterns then
+    if opts.use_default_patterns == true then
         if opts.patterns == nil then
             opts.patterns = M.default_config.patterns
         else
-            vim.tbl_extend('force', opts.patterns, M.default_config.patterns)
+            opts.patterns = vim.tbl_extend('force', opts.patterns, M.default_config.patterns)
         end
     end
     if opts.labels == nil then
         opts.labels = M.default_config.labels
     end
 
+    M.config = opts
+
     if opts.keymap == nil then
         return
     end
-
-    M.config = opts
 
     for _, keymap in ipairs(opts.keymap) do
         for _, mode in ipairs(keymap.mode) do
