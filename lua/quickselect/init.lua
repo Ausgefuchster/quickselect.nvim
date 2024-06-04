@@ -116,17 +116,23 @@ end
 function M.quick_select()
     local lines = vim.api.nvim_buf_get_lines(0, 0, vim.api.nvim_buf_line_count(0), false)
     local matches = get_matches(lines, M.config.patterns)
-    local namespace_id = vim.api.nvim_create_namespace('quickselect')
+    if #matches == 0 then
+        return
+    end
+
     local marks = {}
     local labels = {}
+    local namespace_id = vim.api.nvim_create_namespace('quickselect')
     for _, match in pairs(matches) do
         local label = string.sub(M.config.labels, #marks + 1, #marks + 1)
+        vim.api.nvim_buf_add_highlight(0, namespace_id, 'Search', match.row, match.column, match.column + string.len(match.text))
         local mark_id = vim.api.nvim_buf_set_extmark(0, namespace_id, match.row, match.column, {
             virt_text = {
-                { label }
+                { label, 'CurSearch' }
             },
             virt_text_pos = 'overlay',
         })
+
         table.insert(marks, mark_id)
         table.insert(labels, label)
         register_keymap(namespace_id, match, label, labels, marks)
