@@ -26,6 +26,23 @@ local function get_matches(lines, patterns)
     return matches
 end
 
+local function buf_get_matches(patterns)
+    local lines = vim.api.nvim_buf_get_lines(0, 0, vim.api.nvim_buf_line_count(0), false)
+    return get_matches(lines, patterns)
+end
+
+local function highlight_and_mark(match, label, namespace_id)
+    vim.api.nvim_buf_add_highlight(0, namespace_id, 'Search', match.row, match.column, match.column + string.len(match.text))
+    local mark_id = vim.api.nvim_buf_set_extmark(0, namespace_id, match.row, match.column, {
+        virt_text = {
+            { label, 'CurSearch' }
+        },
+        virt_text_pos = 'overlay',
+    })
+
+    return mark_id
+end
+
 local function clear(namespace_id, mark_ids, labels)
     for _, mark_id in pairs(mark_ids) do
         vim.api.nvim_buf_del_extmark(0, namespace_id, mark_id)
@@ -37,14 +54,9 @@ local function clear(namespace_id, mark_ids, labels)
     vim.keymap.del('n', '<esc>')
 end
 
-local function register_keymap(namespace_id, match, label, labels, marks)
+local function register_keymap(namespace_id, match, label, labels, marks, match_action)
     vim.keymap.set('n', label, function()
-        vim.api.nvim_win_set_cursor(0, { match.row + 1, match.column })
-
-        if M.config.select_match == true then
-            vim.cmd('normal! v')
-            vim.api.nvim_win_set_cursor(0, { match.row + 1, match.column + string.len(match.text) - 1})
-        end
+        match_action(match)
         clear(namespace_id, marks, labels)
     end)
 end
@@ -114,8 +126,7 @@ function M.setup(opts)
 end
 
 function M.quick_select()
-    local lines = vim.api.nvim_buf_get_lines(0, 0, vim.api.nvim_buf_line_count(0), false)
-    local matches = get_matches(lines, M.config.patterns)
+    local matches = buf_get_matches(M.config.patterns)
     if #matches == 0 then
         return
     end
@@ -125,17 +136,51 @@ function M.quick_select()
     local namespace_id = vim.api.nvim_create_namespace('quickselect')
     for _, match in pairs(matches) do
         local label = string.sub(M.config.labels, #marks + 1, #marks + 1)
-        vim.api.nvim_buf_add_highlight(0, namespace_id, 'Search', match.row, match.column, match.column + string.len(match.text))
-        local mark_id = vim.api.nvim_buf_set_extmark(0, namespace_id, match.row, match.column, {
-            virt_text = {
-                { label, 'CurSearch' }
-            },
-            virt_text_pos = 'overlay',
-        })
+        local mark_id = highlight_and_mark(match, label, namespace_id)
 
         table.insert(marks, mark_id)
         table.insert(labels, label)
-        register_keymap(namespace_id, match, label, labels, marks)
+        register_keymap(namespace_id, match, label, labels, marks, function(match)
+            vim.api.nvim_win_set_cursor(0, { match.row + 1, match.column })
+
+            if M.config.select_match == true then
+                vim.cmd('normal! v')
+                vim.api.nvim_win_set_cursor(0, { match.row + 1, match.column + string.len(match.text) - 1})
+            end
+        end)
+    end
+
+    vim.keymap.set('n', '<esc>', function()
+        clear(namespace_id, marks, labels)
+    end)
+end
+
+function M.quick_yank()
+    local matches = buf_get_matches(M.config.patterns)
+    if #matches == 0 then
+        return
+    end
+
+    local marks = {}
+    local labels = {}
+    local namespace_id = vim.api.nvim_create_namespace('quickselect')
+    for _, match in pairs(matches) do
+        local label = string.sub(M.config.labels, #marks + 1, #marks + 1)
+        local mark_id = highlight_and_mark(match, label, namespace_id)
+
+        table.insert(marks, mark_id)
+        table.insert(labels, label)
+        register_keymap(namespace_id, match, label, labels, marks, function(match)
+            local current_cursor = vim.api.nvim_win_get_cursor(0)
+
+            vim.api.nvim_win_set_cursor(0, { match.row + 1, match.column })
+
+            vim.cmd('normal! v')
+            vim.api.nvim_win_set_cursor(0, { match.row + 1, match.column + string.len(match.text) - 1})
+            vim.cmd('normal! y')
+
+            vim.api.nvim_win_set_cursor(0, current_cursor)
+        end)
     end
 
     vim.keymap.set('n', '<esc>', function()
