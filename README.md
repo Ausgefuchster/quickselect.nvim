@@ -3,6 +3,12 @@
 Quickselect is inspired by [wezterm](https://github.com/wez/wezterm).
 It allows you to quickly jump to patterns in the buffer.
 
+## 🌟 Features
+
+- Quickly jump to patterns in the buffer and select them
+- Quick yank patterns in the buffer without moving the cursor
+- Customizable patterns:w
+
 ## 📦 Installation
 
 With [lazy.nvim](https://github.com/folke/lazy.nvim)
@@ -23,6 +29,14 @@ With [lazy.nvim](https://github.com/folke/lazy.nvim)
                 end,
                 desc = 'Quick select'
             },
+            {
+                mode = { 'n' },
+                '<leader>qy',
+                function()
+                    require('quickselect').quick_yank()
+                end,
+                desc = 'Quick yank'
+            }
         },
     },
 }
@@ -67,9 +81,12 @@ With [lazy.nvim](https://github.com/folke/lazy.nvim)
 
 ## 🚀 Usage
 
-quickselect.nvim provides a function `quick_select`,
-which can be called to quickly jump to patterns in the buffer.
+Require `quickselect` and call one of the following functions:
+
+- `quick_select()`: Quick select patterns in the buffer
+- `quick_yank()`: Quick yank patterns in the buffer
 
 ```lua
 require('quickselect').quick_select()
+require('quickselect').quick_yank()
 ```
