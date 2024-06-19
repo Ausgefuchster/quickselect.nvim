@@ -7,7 +7,7 @@ It allows you to quickly jump to patterns in the buffer.
 
 - Quickly jump to patterns in the buffer and select them
 - Quick yank patterns in the buffer without moving the cursor
-- Customizable patterns:w
+- Customizable patterns
 
 ## 📦 Installation
 
