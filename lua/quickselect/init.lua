@@ -96,7 +96,7 @@ function M.setup(opts)
         if opts.patterns == nil then
             opts.patterns = M.default_config.patterns
         else
-            opts.patterns = vim.list_extend('force', opts.patterns, M.default_config.patterns)
+            opts.patterns = vim.list_extend(opts.patterns, M.default_config.patterns)
         end
     end
     if opts.labels == nil then
